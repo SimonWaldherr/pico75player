@@ -27,7 +27,6 @@ def read_sag_header(file):
 def read_and_display_line(file, header, prev_line, y):
     """Read and process a single line of a frame from the SAG file."""
     current_line = [None] * header.width
-
     for x in range(0, header.width, 8):
         identical_byte = ord(file.read(1))  # Read the identical-byte
         pixel_block = file.read(8)          # Read the next 8 pixels
@@ -44,11 +43,7 @@ def process_pixel_block(x, y, identical_byte, pixel_block, prev_line, current_li
     on the Hub75 matrix.
     """
     for bit in range(8):
-        #if x + bit >= len(current_line):
-        #    break
-
         if not identical_byte & (1 << (7 - bit)):
-        #else:
             # Use the new pixel data
             color_index = pixel_block[bit]
             r, g, b = palette[color_index]
@@ -59,10 +54,12 @@ def process_pixel_block(x, y, identical_byte, pixel_block, prev_line, current_li
 def draw_sag_animation(filename):
     """Draw the SAG animation on the Hub75 matrix, processing line by line and looping endlessly."""
     prev_lines = [[None] * WIDTH for _ in range(HEIGHT)]  # Initialize previous frame's lines
+    buffer = bytearray(12 + 768)  # Buffer to read header data
 
     while True:  # Infinite loop to play the animation endlessly
         with open(filename, 'rb') as file:
-            header = read_sag_header(file)  # Read the SAG header
+            file.readinto(buffer)  # Efficiently read header data into buffer
+            header = SAGHeader(buffer)  # Read the SAG header
 
             for frame_index in range(header.frame_count):
                 for y in range(header.height):
@@ -77,5 +74,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
