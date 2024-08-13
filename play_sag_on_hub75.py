@@ -17,11 +17,13 @@ class SAGHeader:
         self.width, self.height, self.frame_count, self.frame_delay = struct.unpack('>HHHH', data[4:12])
         self.color_palette = [data[i:i+3] for i in range(12, 12 + 768, 3)]  # Extract color palette
 
+@micropython.native
 def read_sag_header(file):
     """Read and return the SAG header from the file."""
     header_data = file.read(12 + 768)  # Header size is 12 bytes + 768 bytes for the color palette
     return SAGHeader(header_data)
 
+@micropython.native
 def read_and_display_line(file, header, prev_line, y):
     """Read and process a single line of a frame from the SAG file."""
     current_line = [None] * header.width
@@ -42,16 +44,11 @@ def process_pixel_block(x, y, identical_byte, pixel_block, prev_line, current_li
     on the Hub75 matrix.
     """
     for bit in range(8):
-        if x + bit >= len(current_line):
-            break
+        #if x + bit >= len(current_line):
+        #    break
 
-        if identical_byte & (1 << (7 - bit)):
-            # Reuse the pixel from the previous line
-            if prev_line[x + bit] is not None:
-                r, g, b = prev_line[x + bit]
-            else:
-                r, g, b = 0, 0, 0  # Fallback to black if no previous line data
-        else:
+        if not identical_byte & (1 << (7 - bit)):
+        #else:
             # Use the new pixel data
             color_index = pixel_block[bit]
             r, g, b = palette[color_index]
@@ -71,6 +68,7 @@ def draw_sag_animation(filename):
                 for y in range(header.height):
                     current_line = read_and_display_line(file, header, prev_lines[y], y)  # Process line by line
                     prev_lines[y] = current_line  # Update the previous line for the next iteration
+                display.update(display)
 
 def main():
     input_filename = 'output.sag'  # Replace with your SAG file
